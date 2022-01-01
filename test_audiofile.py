@@ -2,21 +2,7 @@ from audiofile import *
 
 
 class StereoRampFileReader(FileReader):
-    def __init__(self):
-        self.pos = 0
-        self.s = [[n / 4.0, n / 4.0] for n in range(4)]
-
-    def sampleRate(self):
-        return 4
-
-    def read(self, samples):
-        s = self.s[self.pos:self.pos + samples]
-        self.pos += samples
-        return s
-
-
-class StereoLongRampFileReader(FileReader):
-    def __init__(self, length):
+    def __init__(self, length=1):
         self.pos = 0
         denominator = 4.0 * length
         self.s = [[n / denominator, n / denominator] for n in range(int(denominator))]
@@ -73,16 +59,16 @@ def test_reads_fragment_of_file_if_it_finishes_half_way_through_a_block():
 
 
 def test_reads_sequence_of_sections_from_a_long_file():
-    audioFile1 = AudioFile("", StereoLongRampFileReader(2), 0.25, 0.5, 1.5)
+    audioFile1 = AudioFile("", StereoRampFileReader(2), 0.25, 0.5, 1.5)
     assert audioFile1.nextBlock(0) == [[0.0, 0.0], [0.0, 0.0], [0.125, 0.125], [0.25, 0.25]]
     assert audioFile1.nextBlock(1) == [[0.375, 0.375], [0.5, 0.5], [0.625, 0.625], [0.75, 0.75]]
 
-    audioFile2 = AudioFile("", StereoLongRampFileReader(4), 0.75, 0.5, 2.0)
+    audioFile2 = AudioFile("", StereoRampFileReader(4), 0.75, 0.5, 2.0)
     assert audioFile2.nextBlock(0) == [[0.0, 0.0], [0.0, 0.0], [0.1875, 0.1875], [0.25, 0.25]]
     assert audioFile2.nextBlock(1) == [[0.3125, 0.3125], [0.375, 0.375], [0.4375, 0.4375], [0.5, 0.5]]
     assert audioFile2.nextBlock(2) == [[0.5625, 0.5625], [0.625, 0.625], [0.0, 0.0], [0.0, 0.0]]
 
-    audioFile3 = AudioFile("", StereoLongRampFileReader(4), 0.75, 0.5, 2.25)
+    audioFile3 = AudioFile("", StereoRampFileReader(4), 0.75, 0.5, 2.25)
     assert audioFile3.nextBlock(0) == [[0.0, 0.0], [0.0, 0.0], [0.1875, 0.1875], [0.25, 0.25]]
     assert audioFile3.nextBlock(1) == [[0.3125, 0.3125], [0.375, 0.375], [0.4375, 0.4375], [0.5, 0.5]]
     assert audioFile3.nextBlock(2) == [[0.5625, 0.5625], [0.625, 0.625], [0.6875, 0.6875], [0.0, 0.0]]
