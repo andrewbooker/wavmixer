@@ -6,9 +6,6 @@ import os
 from audiofile import AudioFile, FileReader
 import json
 
-SAMPLE_RATE = 44100
-
-
 class SfReader(FileReader):
     def __init__(self, fqfn):
         self.file = sf.SoundFile(fqfn, "r")
@@ -47,6 +44,7 @@ for c in cues:
     audioFiles.append(AudioFile(fqfn, SfReader(fqfn), c["fileStart"], c["mixStart"], c["duration"]))
     
 
+SAMPLE_RATE = 44100
 done = False
 t = 0
 outFileL = sf.SoundFile(os.path.join(outDir, "mix_L.wav"), "w", samplerate=SAMPLE_RATE, channels=1)
