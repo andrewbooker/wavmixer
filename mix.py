@@ -1,0 +1,62 @@
+#!/usr/bin/env python
+
+import soundfile as sf
+import sys
+import os
+from audiofile import AudioFile
+import json
+
+SAMPLE_RATE = 44100
+
+def limit(s):
+    threshold = 0.8
+    assumedMax = max(1.5, s)
+    if abs(s) < threshold:
+        return s
+
+    r = threshold + ((abs(s) - threshold) * (1.0 - threshold) / (assumedMax - threshold))
+    return -r if s < 0 else r
+
+def merge(b1, b2):
+    return [[limit(b1[i][0] + b2[i][0]), limit(b1[i][1] + b2[i][1])] for i in range(len(b1))]
+
+
+workingDir = sys.argv[1]
+ac = open(os.path.join(workingDir, "cues.json"))
+cues = json.load(ac)
+ac.close()
+
+outDir = workingDir
+
+print("writing mixdown_(L|R).wav", "to", outDir)
+
+audioFiles = []
+for c in cues:
+    audioFiles.append(AudioFile(os.path.join(workingDir, c["file"]), c["fileStart"], c["mixStart"], c["duration"]))
+    
+
+done = False
+t = 0
+outFileL = sf.SoundFile(os.path.join(outDir, "mix_L.wav"), "w", samplerate=SAMPLE_RATE, channels=1)
+outFileR = sf.SoundFile(os.path.join(outDir, "mix_R.wav"), "w", samplerate=SAMPLE_RATE, channels=1)
+started = False
+while not done:
+    doneAll = True
+    b = [[0.0, 0.0]] * SAMPLE_RATE
+    for f in audioFiles:
+        if not f.done:
+            doneAll = False
+            if f.occursInBlockStarting(t):
+                started = True
+                b = merge(f.nextBlock(t), b)
+
+    outFileL.write([s[0] for s in b])
+    outFileR.write([s[1] for s in b])
+    t += 1
+    done = started and doneAll
+
+outFileL.close()
+outFileR.close()
+
+for a in audioFiles:
+    del a
