@@ -16,12 +16,13 @@ class AudioFile():
         self.fqfn = fqfn
         self.file = fileReader
         self.fileStart = fileStart
+        self.mixStart = mixStart
+        self.duration = duration
+
+        if fileStart > 0:
+            self.file.read(int(fileStart * self.file.sampleRate()))
         self.durationSamples = int(duration * self.file.sampleRate())
         self.samplesRead = 0
-        self.start = mixStart
-        if fileStart > 0.5:
-            self.start = mixStart - 0.5
-            self.file.read(int((fileStart - 0.5) * self.file.sampleRate()))
         self.done = False
 
     def __del__(self):
@@ -32,32 +33,23 @@ class AudioFile():
         return [[s[0], s[1]] for s in self.file.read(length)]
 
     def occursInBlockStarting(self, t):
-        return not self.done and ((t + 1) > self.start or (t + 0.5) > self.start)
+        return not self.done and ((t + 1) > self.mixStart)
 
     def nextBlock(self, fromT):
-        if fromT < self.start:
-            pre = int(self.file.sampleRate() * (self.start - fromT))
-            print("starting with", self.fqfn, "from sample", pre, "at", fromT)
+        end = self.mixStart + self.duration
+        self.done = fromT == end or (fromT + 1) >= end
+        if fromT >= end:
+            return [[0.0, 0.0]] * self.file.sampleRate()
+        if (fromT + 1) > end:
+            self.done = True
+            remainder = int(self.file.sampleRate() * (end - fromT))
+            buff = [[0.0, 0.0]] * (self.file.sampleRate() - remainder)
+            return self._read(remainder) + buff
+        if self.samplesRead == 0 and (fromT + 1) > self.mixStart:
+            pre = int(self.file.sampleRate() * (self.mixStart - fromT))
             buff = [[0.0, 0.0]] * pre
-            if self.fileStart > 0.5:
-                pr = self._read(int(self.file.sampleRate() * 0.5))
-                for i in range(len(pr)):
-                    buff[i][0] += pr[i][0] * (i / self.file.sampleRate() * 0.5)
-                    buff[i][1] += pr[i][1] * (i / self.file.sampleRate() * 0.5)
             return buff + self._read(self.file.sampleRate() - pre)
-        else:
-            if self.samplesRead == 0:
-                print("straight in with", self.fqfn, "at", fromT)
-            d = self._read(self.file.sampleRate())
-            l = len(d)
-            if l < self.file.sampleRate():
-                self.done = True
-                print("done with", self.fqfn, "at", fromT)
-                return d + ([[0.0, 0.0]] * (self.file.sampleRate() - l))
-            elif self.samplesRead > self.durationSamples:
-                self.done = True
-                excess = self.samplesRead - self.durationSamples
-                print("overshot", self.fqfn, "by", excess, "samples from", fromT)
-                return d[:self.file.sampleRate() - excess] + ([[0.0, 0.0]] * excess)
+        if fromT < self.mixStart:
+            return [[0.0, 0.0]] * self.file.sampleRate()
 
-            return d
+        return self._read(self.file.sampleRate())
