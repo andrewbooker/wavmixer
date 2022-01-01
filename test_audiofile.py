@@ -32,14 +32,14 @@ class StereoLongRampFileReader(FileReader):
 
 def test_includes_first_sample_at_time_zero():
     audioFile = AudioFile("", StereoRampFileReader(), 0, 0, 1)
-    assert audioFile.occursInBlockStarting(0) == True
+    assert audioFile.occursInBlockStarting(0) is True
 
 
 def test_reads_a_one_second_block():
     audioFile = AudioFile("", StereoRampFileReader(), 0, 0, 1)
     b = audioFile.nextBlock(0)
     assert b == [[0.0, 0.0], [0.25, 0.25], [0.5, 0.5], [0.75, 0.75]]
-    assert audioFile.done == True
+    assert audioFile.done is True
 
 
 def test_subsequent_reads_are_empty_once_all_required_samples_have_been_read():
@@ -47,21 +47,21 @@ def test_subsequent_reads_are_empty_once_all_required_samples_have_been_read():
     audioFile.nextBlock(0)
     b = audioFile.nextBlock(1)
     assert b == [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]]
-    assert audioFile.done == True
+    assert audioFile.done is True
 
 
 def test_reads_nothing_before_the_mix_start():
     audioFile = AudioFile("", StereoRampFileReader(), 0, 2, 1)
     b = audioFile.nextBlock(0)
     assert b == [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]]
-    assert audioFile.done == False
+    assert audioFile.done is False
 
 
 def test_reads_fragment_of_file_if_it_starts_half_way_through_a_block():
     audioFile = AudioFile("", StereoRampFileReader(), 0, 0.5, 1)
     b = audioFile.nextBlock(0)
     assert b == [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.25, 0.25]]
-    assert audioFile.done == False
+    assert audioFile.done is False
 
 
 def test_reads_fragment_of_file_if_it_finishes_half_way_through_a_block():
@@ -69,18 +69,18 @@ def test_reads_fragment_of_file_if_it_finishes_half_way_through_a_block():
     audioFile.nextBlock(0)
     b = audioFile.nextBlock(1)
     assert b == [[0.5, 0.5], [0.75, 0.75], [0.0, 0.0], [0.0, 0.0]]
-    assert audioFile.done == True
+    assert audioFile.done is True
 
 
 def test_reads_sequence_of_sections_from_a_long_file():
-    #audioFile1 = AudioFile("", StereoLongRampFileReader(2), 0.25, 0.5, 1.5)
-    #assert audioFile1.nextBlock(0) == [[0.0, 0.0], [0.0, 0.0], [0.125, 0.125], [0.25, 0.25]]
-    #assert audioFile1.nextBlock(1) == [[0.375, 0.375], [0.5, 0.5], [0.625, 0.625], [0.75, 0.75]]
+    audioFile1 = AudioFile("", StereoLongRampFileReader(2), 0.25, 0.5, 1.5)
+    assert audioFile1.nextBlock(0) == [[0.0, 0.0], [0.0, 0.0], [0.125, 0.125], [0.25, 0.25]]
+    assert audioFile1.nextBlock(1) == [[0.375, 0.375], [0.5, 0.5], [0.625, 0.625], [0.75, 0.75]]
 
-    #audioFile2 = AudioFile("", StereoLongRampFileReader(4), 0.75, 0.5, 2.0)
-    #assert audioFile2.nextBlock(0) == [[0.0, 0.0], [0.0, 0.0], [0.1875, 0.1875], [0.25, 0.25]]
-    #assert audioFile2.nextBlock(1) == [[0.3125, 0.3125], [0.375, 0.375], [0.4375, 0.4375], [0.5, 0.5]]
-    #assert audioFile2.nextBlock(2) == [[0.5625, 0.5625], [0.625, 0.625], [0.0, 0.0], [0.0, 0.0]]
+    audioFile2 = AudioFile("", StereoLongRampFileReader(4), 0.75, 0.5, 2.0)
+    assert audioFile2.nextBlock(0) == [[0.0, 0.0], [0.0, 0.0], [0.1875, 0.1875], [0.25, 0.25]]
+    assert audioFile2.nextBlock(1) == [[0.3125, 0.3125], [0.375, 0.375], [0.4375, 0.4375], [0.5, 0.5]]
+    assert audioFile2.nextBlock(2) == [[0.5625, 0.5625], [0.625, 0.625], [0.0, 0.0], [0.0, 0.0]]
 
     audioFile3 = AudioFile("", StereoLongRampFileReader(4), 0.75, 0.5, 2.25)
     assert audioFile3.nextBlock(0) == [[0.0, 0.0], [0.0, 0.0], [0.1875, 0.1875], [0.25, 0.25]]
