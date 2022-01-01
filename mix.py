@@ -3,10 +3,21 @@
 import soundfile as sf
 import sys
 import os
-from audiofile import AudioFile
+from audiofile import AudioFile, FileReader
 import json
 
 SAMPLE_RATE = 44100
+
+
+class SfReader(FileReader):
+    def __init__(self, fqfn):
+        self.file = sf.SoundFile(fqfn, "r")
+
+    def read(self, samples):
+        return self.file.read(samples)
+
+    def close(self):
+        self.file.close()
 
 def limit(s):
     threshold = 0.8
@@ -32,7 +43,8 @@ print("writing mixdown_(L|R).wav", "to", outDir)
 
 audioFiles = []
 for c in cues:
-    audioFiles.append(AudioFile(os.path.join(workingDir, c["file"]), c["fileStart"], c["mixStart"], c["duration"]))
+    fqfn = os.path.join(workingDir, c["file"])
+    audioFiles.append(AudioFile(fqfn, SfReader(fqfn), c["fileStart"], c["mixStart"], c["duration"]))
     
 
 done = False

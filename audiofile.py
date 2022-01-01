@@ -1,17 +1,23 @@
-import soundfile as sf
-
 
 SAMPLE_RATE = 44100
 
 
+class FileReader():
+    def read(self, samples):
+        pass
+
+    def close(self):
+        pass
+
+
 class AudioFile():
-    def __init__(self, fqfn, fileStart, mixStart, duration):
+    def __init__(self, fqfn, fileReader, fileStart, mixStart, duration):
         self.fqfn = fqfn
         self.fileStart = fileStart
         self.durationSamples = int(duration * SAMPLE_RATE)
         self.samplesRead = 0
         self.start = mixStart
-        self.file = sf.SoundFile(fqfn, "r")
+        self.file = fileReader
         if fileStart > 0.5:
             self.start = mixStart - 0.5
             self.file.read(int((fileStart - 0.5) * SAMPLE_RATE)) 
