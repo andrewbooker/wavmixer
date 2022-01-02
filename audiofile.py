@@ -16,21 +16,26 @@ class Fader():
         self.sampleLength = sampleLength
         self.startAt = startAt
         self.pos = 0
+        self.isUp = startAt == 0
 
-    def up(self, to):
-        if self.pos > self.sampleLength:
-            return to
-        coeff = 1.0 * self.pos / self.sampleLength
-        v = [coeff * to[0], coeff * to[1]]
-        self.pos += 1
-        return v
+    def isDone(self):
+        return (self.pos - self.startAt) > self.sampleLength
 
-    def down(self, to):
+    def apply(self, to):
+        if self.isUp:
+            if self.pos > self.sampleLength:
+                return to
+            coeff = 1.0 * self.pos / self.sampleLength
+            v = [coeff * to[0], coeff * to[1]]
+            self.pos += 1
+            return v
+
         self.pos += 1
         if self.pos < self.startAt:
             return to
         coeff = 1.0 - (1.0 * (self.pos - self.startAt) / self.sampleLength)
         return [coeff * to[0], coeff * to[1]]
+
 
 class AudioFile():
     def __init__(self, fqfn, fileReader, fileStart, mixStart, duration, crossfade=0.0):
@@ -40,6 +45,7 @@ class AudioFile():
         self.mixStart = mixStart
         self.duration = duration
         self.crossfade = crossfade
+        self.fade = None
 
         if fileStart > 0:
             self.file.read(int((fileStart - crossfade) * self.file.sampleRate()))
@@ -63,6 +69,7 @@ class AudioFile():
         if fromT >= end:
             self.done = True
             return [[0.0, 0.0]] * self.file.sampleRate()
+
         if (fromT + 1) >= end:
             self.done = True
             remainder = int(self.file.sampleRate() * (end - fromT))
@@ -71,9 +78,10 @@ class AudioFile():
             if self.crossfade == 0.0:
                 return fbuff + buff
             xf = self.crossfade * self.file.sampleRate()
-            fade = Fader(xf, remainder - xf)
-            return [fade.down(s) for s in fbuff] + buff
-        if self.samplesRead == 0 and (fromT + 1) >= self.mixStart:
+            self.fade = Fader(xf, remainder - xf)
+            return [self.fade.apply(s) for s in fbuff] + buff
+
+        if self.samplesRead == 0 and (fromT + 1 + self.crossfade) >= self.mixStart:
             pre = int(self.file.sampleRate() * (self.mixStart - fromT))
             if pre > self.crossfade * self.file.sampleRate():
                 pre -= int(self.crossfade * self.file.sampleRate())
@@ -82,11 +90,15 @@ class AudioFile():
             b = buff + fbuff
             if self.crossfade == 0.0:
                 return b
-            fade = Fader(self.crossfade * self.file.sampleRate())
+            self.fade = Fader(self.crossfade * self.file.sampleRate())
             if self.mixStart == 0:
-                return [fade.up(s) for s in b]
-            return buff + [fade.up(s) for s in fbuff]
-        if fromT < self.mixStart:
+                return [self.fade.apply(s) for s in b]
+            return buff + [self.fade.apply(s) for s in fbuff]
+
+        if fromT < (self.mixStart - self.crossfade):
             return [[0.0, 0.0]] * self.file.sampleRate()
 
-        return self._read(self.file.sampleRate())
+        b = self._read(self.file.sampleRate())
+        if self.fade is None:
+            return b
+        return [self.fade.apply(s) for s in b]
