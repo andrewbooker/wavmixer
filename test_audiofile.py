@@ -93,8 +93,13 @@ def test_can_fade_up_samples_prior_to_the_specified_file_start_time_after_the_be
     audioFile1 = AudioFile("", StereoRampFileReader(2), 1, 1, 999, 0.5)
     assert audioFile1.nextBlock(0) == [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.1875, 0.1875]]
 
-    audioFile2 = AudioFile("", StereoFlatReader(0.4, 3), 1, 1, 999, 0.5)
+    audioFile2 = AudioFile("", StereoFlatReader(0.4, 9), 1, 1, 999, 0.5)
     assert audioFile2.nextBlock(0) == [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.2, 0.2]]
     assert audioFile2.nextBlock(1) == [[0.4, 0.4], [0.4, 0.4], [0.4, 0.4], [0.4, 0.4]]
 
 
+def test_can_fade_out_by_the_specified_end_time():
+    audioFile = AudioFile("", StereoFlatReader(0.4, 9), 1, 1, 2, 0.5)
+    assert audioFile.nextBlock(0) == [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.2, 0.2]]
+    assert audioFile.nextBlock(1) == [[0.4, 0.4], [0.4, 0.4], [0.4, 0.4], [0.4, 0.4]]
+    assert audioFile.nextBlock(2) == [[0.4, 0.4], [0.4, 0.4], [0.2, 0.2], [0.0, 0.0]]

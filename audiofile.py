@@ -12,8 +12,9 @@ class FileReader():
 
 
 class Fader():
-    def __init__(self, sampleLength):
+    def __init__(self, sampleLength, startAt=0):
         self.sampleLength = sampleLength
+        self.startAt = startAt
         self.pos = 0
 
     def up(self, to):
@@ -23,6 +24,13 @@ class Fader():
         v = [coeff * to[0], coeff * to[1]]
         self.pos += 1
         return v
+
+    def down(self, to):
+        self.pos += 1
+        if self.pos < self.startAt:
+            return to
+        coeff = 1.0 - (1.0 * (self.pos - self.startAt) / self.sampleLength)
+        return [coeff * to[0], coeff * to[1]]
 
 class AudioFile():
     def __init__(self, fqfn, fileReader, fileStart, mixStart, duration, crossfade=0.0):
@@ -54,10 +62,15 @@ class AudioFile():
         self.done = fromT == end or (fromT + 1) >= end
         if fromT >= end:
             return [[0.0, 0.0]] * self.file.sampleRate()
-        if (fromT + 1) > end:
+        if (fromT + 1) >= end:
             remainder = int(self.file.sampleRate() * (end - fromT))
             buff = [[0.0, 0.0]] * (self.file.sampleRate() - remainder)
-            return self._read(remainder) + buff
+            fbuff = self._read(remainder)
+            if self.crossfade == 0.0:
+                return fbuff + buff
+            xf = self.crossfade * self.file.sampleRate()
+            fade = Fader(xf, remainder - xf)
+            return [fade.down(s) for s in fbuff] + buff
         if self.samplesRead == 0 and (fromT + 1) >= self.mixStart:
             pre = int(self.file.sampleRate() * (self.mixStart - fromT))
             if self.mixStart > 0:
@@ -73,7 +86,5 @@ class AudioFile():
             return buff + [fade.up(s) for s in fbuff]
         if fromT < self.mixStart:
             return [[0.0, 0.0]] * self.file.sampleRate()
-
-
 
         return self._read(self.file.sampleRate())
