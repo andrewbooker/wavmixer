@@ -1,11 +1,10 @@
 from audiofile import *
 
 
-class StereoRampFileReader(FileReader):
-    def __init__(self, length=1):
+class BaseReader(FileReader):
+    def __init__(self, s):
+        self.s = s
         self.pos = 0
-        denominator = 4.0 * length
-        self.s = [[n / denominator, n / denominator] for n in range(int(denominator))]
 
     def sampleRate(self):
         return 4
@@ -14,7 +13,18 @@ class StereoRampFileReader(FileReader):
         s = self.s[self.pos:self.pos + samples]
         self.pos += samples
         return s
-        
+
+
+class StereoRampFileReader(BaseReader):
+    def __init__(self, length=1):
+        denominator = 4.0 * length
+        super(StereoRampFileReader, self).__init__([[n / denominator, n / denominator] for n in range(int(denominator))])
+
+
+class StereoFlatReader(BaseReader):
+    def __init__(self, value, length=1):
+        super(StereoFlatReader, self).__init__([[value, value]] * 4 * length)
+
 
 def test_includes_first_sample_at_time_zero():
     audioFile = AudioFile("", StereoRampFileReader(), 0, 0, 1)
@@ -72,3 +82,19 @@ def test_reads_sequence_of_sections_from_a_long_file():
     assert audioFile3.nextBlock(0) == [[0.0, 0.0], [0.0, 0.0], [0.1875, 0.1875], [0.25, 0.25]]
     assert audioFile3.nextBlock(1) == [[0.3125, 0.3125], [0.375, 0.375], [0.4375, 0.4375], [0.5, 0.5]]
     assert audioFile3.nextBlock(2) == [[0.5625, 0.5625], [0.625, 0.625], [0.6875, 0.6875], [0.0, 0.0]]
+
+
+def test_can_fade_up_to_the_specified_file_at_the_beginning_of_the_mix():
+    audioFile = AudioFile("", StereoRampFileReader(2), 1, 0, 999, 0.5)
+    assert audioFile.nextBlock(0) == [[0.0, 0.0], [0.1875, 0.1875], [0.5, 0.5], [0.625, 0.625]]
+
+
+def test_can_fade_up_samples_prior_to_the_specified_file_start_time_after_the_beginning_of_the_mix():
+    audioFile1 = AudioFile("", StereoRampFileReader(2), 1, 1, 999, 0.5)
+    assert audioFile1.nextBlock(0) == [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.1875, 0.1875]]
+
+    audioFile2 = AudioFile("", StereoFlatReader(0.4, 3), 1, 1, 999, 0.5)
+    assert audioFile2.nextBlock(0) == [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.2, 0.2]]
+    assert audioFile2.nextBlock(1) == [[0.4, 0.4], [0.4, 0.4], [0.4, 0.4], [0.4, 0.4]]
+
+
