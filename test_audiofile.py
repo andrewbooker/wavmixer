@@ -103,3 +103,8 @@ def test_can_fade_out_by_the_specified_end_time():
     assert audioFile.nextBlock(0) == [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.2, 0.2]]
     assert audioFile.nextBlock(1) == [[0.4, 0.4], [0.4, 0.4], [0.4, 0.4], [0.4, 0.4]]
     assert audioFile.nextBlock(2) == [[0.4, 0.4], [0.4, 0.4], [0.2, 0.2], [0.0, 0.0]]
+
+
+def test_can_fade_up_a_sample_mid_block():
+    audioFile = AudioFile("", StereoFlatReader(0.4, 9), 1, 0.75, 999, 0.5)
+    assert audioFile.nextBlock(0) == [[0.0, 0.0], [0.0, 0.0], [0.2, 0.2], [0.4, 0.4]]

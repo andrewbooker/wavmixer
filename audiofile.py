@@ -59,10 +59,12 @@ class AudioFile():
 
     def nextBlock(self, fromT):
         end = self.mixStart + self.duration
-        self.done = fromT == end or (fromT + 1) >= end
+
         if fromT >= end:
+            self.done = True
             return [[0.0, 0.0]] * self.file.sampleRate()
         if (fromT + 1) >= end:
+            self.done = True
             remainder = int(self.file.sampleRate() * (end - fromT))
             buff = [[0.0, 0.0]] * (self.file.sampleRate() - remainder)
             fbuff = self._read(remainder)
@@ -73,7 +75,7 @@ class AudioFile():
             return [fade.down(s) for s in fbuff] + buff
         if self.samplesRead == 0 and (fromT + 1) >= self.mixStart:
             pre = int(self.file.sampleRate() * (self.mixStart - fromT))
-            if self.mixStart > 0:
+            if pre > self.crossfade * self.file.sampleRate():
                 pre -= int(self.crossfade * self.file.sampleRate())
             fbuff = self._read(self.file.sampleRate() - pre)
             buff = [[0.0, 0.0]] * pre

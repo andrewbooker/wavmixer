@@ -41,7 +41,7 @@ print("writing mixdown_(L|R).wav", "to", outDir)
 audioFiles = []
 for c in cues:
     fqfn = os.path.join(workingDir, c["file"])
-    audioFiles.append(AudioFile(fqfn, SfReader(fqfn), c["fileStart"], c["mixStart"], c["duration"]))
+    audioFiles.append(AudioFile(fqfn, SfReader(fqfn), c["fileStart"], c["mixStart"], c["duration"], 0.25))
     
 
 SAMPLE_RATE = 44100
