@@ -7,7 +7,7 @@ class Action(Enum):
     Down = -1
 
 class FadeUpDown():
-    def __init__(self, initBlockTime, rampTime, startTime, upTime, sampleRate):
+    def __init__(self, rampTime, startTime, upTime, sampleRate):
         self.sampleRate = sampleRate
         self.rampTime = rampTime
         self.startUpTime = startTime

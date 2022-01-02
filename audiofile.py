@@ -1,3 +1,4 @@
+from fader import FadeUpDown
 
 
 class FileReader():
@@ -11,32 +12,6 @@ class FileReader():
         pass
 
 
-class Fader():
-    def __init__(self, sampleLength, startAt=0):
-        self.sampleLength = sampleLength
-        self.startAt = startAt
-        self.pos = 0
-        self.isUp = startAt == 0
-
-    def isDone(self):
-        return (self.pos - self.startAt) > self.sampleLength
-
-    def apply(self, to):
-        if self.isUp:
-            if self.pos > self.sampleLength:
-                return to
-            coeff = 1.0 * self.pos / self.sampleLength
-            v = [coeff * to[0], coeff * to[1]]
-            self.pos += 1
-            return v
-
-        self.pos += 1
-        if self.pos < self.startAt:
-            return to
-        coeff = 1.0 - (1.0 * (self.pos - self.startAt) / self.sampleLength)
-        return [coeff * to[0], coeff * to[1]]
-
-
 class AudioFile():
     def __init__(self, fqfn, fileReader, fileStart, mixStart, duration, crossfade=0.0):
         self.fqfn = fqfn
@@ -45,7 +20,7 @@ class AudioFile():
         self.mixStart = mixStart
         self.duration = duration
         self.crossfade = crossfade
-        self.fade = None
+        self.fadeUpDown = None
 
         if fileStart > 0:
             self.file.read(int((fileStart - crossfade) * self.file.sampleRate()))
@@ -63,7 +38,7 @@ class AudioFile():
     def occursInBlockStarting(self, t):
         return not self.done and ((t + 1) > self.mixStart)
 
-    def nextBlock(self, fromT):
+    def _readBlock(self, fromT):
         end = self.mixStart + self.duration
 
         if fromT >= end:
@@ -75,30 +50,29 @@ class AudioFile():
             remainder = int(self.file.sampleRate() * (end - fromT))
             buff = [[0.0, 0.0]] * (self.file.sampleRate() - remainder)
             fbuff = self._read(remainder)
-            if self.crossfade == 0.0:
-                return fbuff + buff
-            xf = self.crossfade * self.file.sampleRate()
-            self.fade = Fader(xf, remainder - xf)
-            return [self.fade.apply(s) for s in fbuff] + buff
+            return fbuff + buff
 
         if self.samplesRead == 0 and (fromT + 1 + self.crossfade) >= self.mixStart:
+            if self.crossfade != 0.0 and self.fadeUpDown is None:
+                startRamp = self.mixStart - fromT
+                if startRamp > self.crossfade:
+                    startRamp -= self.crossfade
+                self.fadeUpDown = FadeUpDown(self.crossfade, startRamp, self.duration - self.crossfade, self.file.sampleRate())
+
             pre = int(self.file.sampleRate() * (self.mixStart - fromT))
             if pre > self.crossfade * self.file.sampleRate():
                 pre -= int(self.crossfade * self.file.sampleRate())
             fbuff = self._read(self.file.sampleRate() - pre)
             buff = [[0.0, 0.0]] * pre
-            b = buff + fbuff
-            if self.crossfade == 0.0:
-                return b
-            self.fade = Fader(self.crossfade * self.file.sampleRate())
-            if self.mixStart == 0:
-                return [self.fade.apply(s) for s in b]
-            return buff + [self.fade.apply(s) for s in fbuff]
+            return buff + fbuff
 
         if fromT < (self.mixStart - self.crossfade):
             return [[0.0, 0.0]] * self.file.sampleRate()
 
-        b = self._read(self.file.sampleRate())
-        if self.fade is None:
-            return b
-        return [self.fade.apply(s) for s in b]
+        return self._read(self.file.sampleRate())
+
+    def nextBlock(self, fromT):
+        b = self._readBlock(fromT)
+        if self.fadeUpDown is not None:
+            return [self.fadeUpDown.apply(s) for s in b]
+        return b
