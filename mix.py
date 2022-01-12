@@ -36,7 +36,7 @@ ac.close()
 
 outDir = workingDir
 
-print("writing mixdown_(L|R).wav", "to", outDir)
+print("writing mix_(L|R).wav", "to", outDir)
 
 audioFiles = []
 for c in cues:
