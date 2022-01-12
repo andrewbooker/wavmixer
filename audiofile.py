@@ -36,7 +36,7 @@ class AudioFile():
         return [[s[0], s[1]] for s in self.file.read(length)]
 
     def occursInBlockStarting(self, t):
-        return not self.done and ((t + 1) > self.mixStart)
+        return not self.done and ((t + 1 + self.crossfade) >= self.mixStart)
 
     def _readBlock(self, fromT):
         end = self.mixStart + self.duration
