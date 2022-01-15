@@ -130,3 +130,15 @@ def test_can_fade_down_across_blocks():
     assert audioFile.nextBlock(2) == [[0.4, 0.4], [0.4, 0.4], [0.4, 0.4], [0.4, 0.4]]
     assert audioFile.nextBlock(3) == [[0.4, 0.4], [0.4, 0.4], [0.30000000000000004, 0.30000000000000004], [0.2, 0.2]]
     assert audioFile.nextBlock(4) == [[0.1, 0.1], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]]
+
+
+def test_can_fade_a_sample_in_and_out():
+    audioFile = AudioFile("", StereoFlatReader(0.25, 9), 1, 1.25, 2, 0.5)
+    assert audioFile.occursInBlockStarting(0) is True
+    assert audioFile.nextBlock(0) == [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]]
+    assert audioFile.nextBlock(1) == [[0.125, 0.125], [0.25, 0.25], [0.25, 0.25], [0.25, 0.25]]
+    assert audioFile.nextBlock(2) == [[0.25, 0.25], [0.25, 0.25], [0.25, 0.25], [0.125, 0.125]]
+    assert audioFile.occursInBlockStarting(3) is True
+    assert audioFile.nextBlock(3) == [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]]
+    assert audioFile.occursInBlockStarting(4) is False
+    assert audioFile.nextBlock(4) == [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]]

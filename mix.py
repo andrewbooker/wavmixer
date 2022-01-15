@@ -41,7 +41,7 @@ print("writing mix_(L|R).wav", "to", outDir)
 audioFiles = []
 for c in cues:
     fqfn = os.path.join(workingDir, c["file"])
-    audioFiles.append(AudioFile(fqfn, SfReader(fqfn), c["fileStart"], c["mixStart"], c["duration"], 0.25))
+    audioFiles.append(AudioFile(fqfn, SfReader(fqfn), c["fileStart"], c["mixStart"], c["duration"], 0.75))
     
 
 SAMPLE_RATE = 44100

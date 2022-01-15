@@ -19,6 +19,7 @@ class AudioFile():
         self.fileStart = fileStart
         self.mixStart = mixStart
         self.duration = duration
+        self.end = self.mixStart + self.duration
         self.crossfade = crossfade
         self.fadeUpDown = None
 
@@ -39,15 +40,13 @@ class AudioFile():
         return not self.done and ((t + 1 + self.crossfade) >= self.mixStart)
 
     def _readBlock(self, fromT):
-        end = self.mixStart + self.duration
-
-        if fromT >= end:
+        if fromT >= self.end:
             self.done = True
             return [[0.0, 0.0]] * self.file.sampleRate()
 
-        if (fromT + 1) >= end:
+        if (fromT + 1) >= self.end:
             self.done = True
-            remainder = int(self.file.sampleRate() * (end - fromT))
+            remainder = int(self.file.sampleRate() * (self.end - fromT))
             buff = [[0.0, 0.0]] * (self.file.sampleRate() - remainder)
             fbuff = self._read(remainder)
             return fbuff + buff
@@ -57,7 +56,10 @@ class AudioFile():
                 startRamp = self.mixStart - fromT
                 if startRamp > self.crossfade:
                     startRamp -= self.crossfade
-                self.fadeUpDown = FadeUpDown(self.crossfade, startRamp, self.duration - self.crossfade, self.file.sampleRate())
+                dur = self.duration - self.crossfade
+                if self.mixStart == 0:
+                    dur -= self.crossfade
+                self.fadeUpDown = FadeUpDown(self.crossfade, startRamp, dur, self.file.sampleRate())
 
             pre = int(self.file.sampleRate() * (self.mixStart - fromT))
             if pre > self.crossfade * self.file.sampleRate():
