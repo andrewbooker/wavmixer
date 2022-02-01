@@ -30,13 +30,15 @@ def merge(b1, b2):
 
 
 workingDir = sys.argv[1]
-ac = open(os.path.join(workingDir, "cues.json"))
+cuesFn = sys.argv[2] if len(sys.argv) > 2 else os.path.join(workingDir, "cues.json")
+outBase = os.path.basename(cuesFn).split(".")[0]
+ac = open(cuesFn)
 cues = json.load(ac)
 ac.close()
 
 outDir = workingDir
 
-print("writing mix_(L|R).wav", "to", outDir)
+print("writing %s_(L|R).wav" % outBase, "to", outDir)
 
 audioFiles = []
 for c in cues:
@@ -47,8 +49,8 @@ for c in cues:
 SAMPLE_RATE = 44100
 done = False
 t = 0
-outFileL = sf.SoundFile(os.path.join(outDir, "mix_L.wav"), "w", samplerate=SAMPLE_RATE, channels=1)
-outFileR = sf.SoundFile(os.path.join(outDir, "mix_R.wav"), "w", samplerate=SAMPLE_RATE, channels=1)
+outFileL = sf.SoundFile(os.path.join(outDir, "%s_L.wav" % outBase), "w", samplerate=SAMPLE_RATE, channels=1)
+outFileR = sf.SoundFile(os.path.join(outDir, "%s_R.wav" % outBase), "w", samplerate=SAMPLE_RATE, channels=1)
 started = False
 while not done:
     doneAll = True

@@ -8,7 +8,8 @@ SAMPLE_RATE=44100
 
 fn1 = sys.argv[1]
 fn2 = sys.argv[2]
-f2StartAt = float(sys.argv[3]) if len(sys.argv) > 3 else 0.0
+outFn = sys.argv[3]
+f2StartAt = float(sys.argv[4]) if len(sys.argv) > 4 else 0.0
 
 print(fn1)
 print(fn2)
@@ -28,7 +29,7 @@ def sampleAt(i):
     return [l, r]
 
 outDir = "."
-outFile = sf.SoundFile(os.path.join(outDir, "merged.wav"), "w", samplerate=SAMPLE_RATE, channels=2)
+outFile = sf.SoundFile(os.path.join(outDir, outFn), "w", samplerate=SAMPLE_RATE, channels=2)
 
 done = False
 blockSize = 44100
