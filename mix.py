@@ -28,22 +28,45 @@ def limit(s):
 def merge(b1, b2):
     return [[limit(b1[i][0] + b2[i][0]), limit(b1[i][1] + b2[i][1])] for i in range(len(b1))]
 
+def parseLof(fqfn, substituteDir):
+    files = []
+    with open(fqfn, "r") as f:
+        ls = f.readlines()
+        for l in ls:
+            s = float(l.split(" offset ")[1])
+            f = os.path.join(substituteDir, os.path.basename(l.split("\"")[1]))
+            files.append((f, s))
+    return files
+
 
 workingDir = sys.argv[1]
-cuesFn = sys.argv[2] if len(sys.argv) > 2 else os.path.join(workingDir, "cues.json")
-outBase = os.path.basename(cuesFn).split(".")[0]
-ac = open(cuesFn)
-cues = json.load(ac)
-ac.close()
+lofFn = sys.argv[2] if len(sys.argv) > 2 and "lof" in sys.argv[2].split(".")[1] else None
+
+outBase = "mix"
+audioFiles = []
+if lofFn is not None:
+    print("reading %s" % lofFn)
+    files = parseLof(os.path.join(workingDir, lofFn), workingDir)
+    for f in files:
+        fqfn = f[0]
+        data, sr = sf.read(fqfn)
+        dur = len(data) / (1.0 * sr)
+        audioFiles.append(AudioFile(fqfn, SfReader(fqfn), 0, f[1], dur))
+else:
+    cuesFn = sys.argv[2] if len(sys.argv) > 2 else os.path.join(workingDir, "cues.json")
+    print("reading cues list %s" % cuesFn)
+    outBase = os.path.basename(cuesFn).split(".")[0]
+    ac = open(cuesFn)
+    cues = json.load(ac)
+    ac.close()
+
+    for c in cues:
+        fqfn = os.path.join(workingDir, c["file"])
+        audioFiles.append(AudioFile(fqfn, SfReader(fqfn), c["fileStart"], c["mixStart"], c["duration"], 0.75))
 
 outDir = workingDir
-
 print("writing %s_(L|R).wav" % outBase, "to", outDir)
 
-audioFiles = []
-for c in cues:
-    fqfn = os.path.join(workingDir, c["file"])
-    audioFiles.append(AudioFile(fqfn, SfReader(fqfn), c["fileStart"], c["mixStart"], c["duration"], 0.75))
     
 
 SAMPLE_RATE = 44100
