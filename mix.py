@@ -4,6 +4,7 @@ import soundfile as sf
 import sys
 import os
 from audiofile import AudioFile, FileReader
+from limiter import Limiter
 import json
 
 class SfReader(FileReader):
@@ -16,18 +17,6 @@ class SfReader(FileReader):
     def close(self):
         self.file.close()
 
-class Limiter():
-    def __init__(self):
-        self.threshold = 0.8
-        self.assumedMax = 1.5
-
-    def apply(self, s):
-        assumedMax = max(self.assumedMax, s)
-        if abs(s) < self.threshold:
-            return s
-
-        r = self.threshold + ((abs(s) - self.threshold) * (1.0 - self.threshold) / (assumedMax - self.threshold))
-        return -r if s < 0 else r
 
 def merge(b1, b2, limiter):
     return [[limiter.apply(b1[i][0] + b2[i][0]), limiter.apply(b1[i][1] + b2[i][1])] for i in range(len(b1))]
