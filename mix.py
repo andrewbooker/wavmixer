@@ -69,7 +69,7 @@ t = 0
 outFileL = sf.SoundFile(os.path.join(outDir, "%s_L.wav" % outBase), "w", samplerate=SAMPLE_RATE, channels=1)
 outFileR = sf.SoundFile(os.path.join(outDir, "%s_R.wav" % outBase), "w", samplerate=SAMPLE_RATE, channels=1)
 started = False
-limiter = Limiter()
+limiter = Limiter(gain)
 while not done:
     doneAll = True
     b = [[0.0, 0.0]] * SAMPLE_RATE
@@ -80,8 +80,8 @@ while not done:
                 started = True
                 b = merge(f.nextBlock(t), b, limiter)
 
-    outFileL.write([s[0] * gain for s in b])
-    outFileR.write([s[1] * gain for s in b])
+    outFileL.write([s[0] for s in b])
+    outFileR.write([s[1] for s in b])
     t += 1
     done = started and doneAll
 
