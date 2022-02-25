@@ -16,17 +16,21 @@ class SfReader(FileReader):
     def close(self):
         self.file.close()
 
-def limit(s):
-    threshold = 0.8
-    assumedMax = max(1.5, s)
-    if abs(s) < threshold:
-        return s
+class Limiter():
+    def __init__(self):
+        self.threshold = 0.8
+        self.assumedMax = 1.5
 
-    r = threshold + ((abs(s) - threshold) * (1.0 - threshold) / (assumedMax - threshold))
-    return -r if s < 0 else r
+    def apply(self, s):
+        assumedMax = max(self.assumedMax, s)
+        if abs(s) < self.threshold:
+            return s
 
-def merge(b1, b2):
-    return [[limit(b1[i][0] + b2[i][0]), limit(b1[i][1] + b2[i][1])] for i in range(len(b1))]
+        r = self.threshold + ((abs(s) - self.threshold) * (1.0 - self.threshold) / (assumedMax - self.threshold))
+        return -r if s < 0 else r
+
+def merge(b1, b2, limiter):
+    return [[limiter.apply(b1[i][0] + b2[i][0]), limiter.apply(b1[i][1] + b2[i][1])] for i in range(len(b1))]
 
 def parseLof(fqfn, substituteDir):
     files = []
@@ -41,6 +45,7 @@ def parseLof(fqfn, substituteDir):
 
 workingDir = sys.argv[1]
 lofFn = sys.argv[2] if len(sys.argv) > 2 and "lof" in sys.argv[2].split(".")[1] else None
+gain = float(sys.argv[3]) if len(sys.argv) > 3 else 1.0
 
 outBase = "mix"
 audioFiles = []
@@ -75,6 +80,7 @@ t = 0
 outFileL = sf.SoundFile(os.path.join(outDir, "%s_L.wav" % outBase), "w", samplerate=SAMPLE_RATE, channels=1)
 outFileR = sf.SoundFile(os.path.join(outDir, "%s_R.wav" % outBase), "w", samplerate=SAMPLE_RATE, channels=1)
 started = False
+limiter = Limiter()
 while not done:
     doneAll = True
     b = [[0.0, 0.0]] * SAMPLE_RATE
@@ -83,10 +89,10 @@ while not done:
             doneAll = False
             if f.occursInBlockStarting(t):
                 started = True
-                b = merge(f.nextBlock(t), b)
+                b = merge(f.nextBlock(t), b, limiter)
 
-    outFileL.write([s[0] for s in b])
-    outFileR.write([s[1] for s in b])
+    outFileL.write([s[0] * gain for s in b])
+    outFileR.write([s[1] * gain for s in b])
     t += 1
     done = started and doneAll
 
