@@ -1,8 +1,8 @@
 
 class Limiter():
-    def __init__(self, gain):
-        self.threshold = 0.8
-        self.assumedMax = 1.5
+    def __init__(self, gain, threshold=0.8, assumedMax=1.5):
+        self.threshold = threshold
+        self.assumedMax = assumedMax
         self.gain = gain
 
     def apply(self, v):
