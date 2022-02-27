@@ -36,11 +36,12 @@ workingDir = sys.argv[1]
 lofFn = sys.argv[2] if len(sys.argv) > 2 and "lof" in sys.argv[2].split(".")[1] else None
 gain = float(sys.argv[3]) if len(sys.argv) > 3 else 1.0
 
-outBase = "mix"
+outFnPrefix = ""
 audioFiles = []
 if lofFn is not None:
     print("reading %s" % lofFn)
-    files = parseLof(os.path.join(workingDir, lofFn), workingDir)
+    outFnPrefix = os.path.join(os.path.dirname(workingDir), "mixdown_%s" % os.path.basename(workingDir))
+    files = parseLof(lofFn, workingDir)
     for f in files:
         fqfn = f[0]
         data, sr = sf.read(fqfn)
@@ -49,7 +50,7 @@ if lofFn is not None:
 else:
     cuesFn = sys.argv[2] if len(sys.argv) > 2 else os.path.join(workingDir, "cues.json")
     print("reading cues list %s" % cuesFn)
-    outBase = os.path.basename(cuesFn).split(".")[0]
+    outFnPrefix = os.path.join(workingDir, os.path.basename(cuesFn).split(".")[0])
     ac = open(cuesFn)
     cues = json.load(ac)
     ac.close()
@@ -58,16 +59,13 @@ else:
         fqfn = os.path.join(workingDir, c["file"])
         audioFiles.append(AudioFile(fqfn, SfReader(fqfn), c["fileStart"], c["mixStart"], c["duration"], 0.75))
 
-outDir = workingDir
-print("writing %s_(L|R).wav" % outBase, "to", outDir)
-
-    
+print("writing %s_(L|R).wav" % outFnPrefix)
 
 SAMPLE_RATE = 44100
 done = False
 t = 0
-outFileL = sf.SoundFile(os.path.join(outDir, "%s_L.wav" % outBase), "w", samplerate=SAMPLE_RATE, channels=1)
-outFileR = sf.SoundFile(os.path.join(outDir, "%s_R.wav" % outBase), "w", samplerate=SAMPLE_RATE, channels=1)
+outFileL = sf.SoundFile("%s_L.wav" % outFnPrefix, "w", samplerate=SAMPLE_RATE, channels=1)
+outFileR = sf.SoundFile("%s_R.wav" % outFnPrefix, "w", samplerate=SAMPLE_RATE, channels=1)
 started = False
 limiter = Limiter(gain, threshold=0.8, assumedMax=1.6)
 while not done:
