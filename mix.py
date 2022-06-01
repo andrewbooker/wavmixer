@@ -35,12 +35,13 @@ def parseLof(fqfn, substituteDir):
 workingDir = sys.argv[1]
 lofFn = sys.argv[2] if len(sys.argv) > 2 and "lof" in sys.argv[2].split(".")[1] else None
 gain = float(sys.argv[3]) if len(sys.argv) > 3 else 1.0
-
+outPrefix = sys.argv[4] if len(sys.argv) > 4 else "mixdown"
 outFnPrefix = ""
+
 audioFiles = []
 if lofFn is not None:
     print("reading %s" % lofFn)
-    outFnPrefix = os.path.join(os.path.dirname(workingDir), "mixdown_%s" % os.path.basename(workingDir))
+    outFnPrefix = os.path.join(os.path.dirname(workingDir), "%s_%s" % (outPrefix, os.path.basename(workingDir)))
     files = parseLof(lofFn, workingDir)
     for f in files:
         fqfn = f[0]
