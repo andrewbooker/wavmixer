@@ -5,8 +5,11 @@ import sys
 import os
 from audiofile import AudioFile, FileReader
 from limiter import Limiter
-from mixer import SAMPLE_RATE, Mixer
+from mixer import Mixer
 import json
+
+
+SAMPLE_RATE = 44100
 
 
 class SfReader(FileReader):
@@ -65,7 +68,7 @@ outFileL = sf.SoundFile("%s_L.wav" % outFnPrefix, "w", samplerate=SAMPLE_RATE, c
 outFileR = sf.SoundFile("%s_R.wav" % outFnPrefix, "w", samplerate=SAMPLE_RATE, channels=1)
 limiter = Limiter(gain, threshold=0.8, assumedMax=1.6)
 
-mixer = Mixer(outFileL, outFileR, limiter)
+mixer = Mixer(outFileL, outFileR, limiter, SAMPLE_RATE)
 mixer.mix(audioFiles)
 
 outFileL.close()
