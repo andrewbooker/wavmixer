@@ -7,6 +7,10 @@ from audiofile import AudioFile, FileReader
 from limiter import Limiter
 import json
 
+
+SAMPLE_RATE = 44100
+
+
 class SfReader(FileReader):
     def __init__(self, fqfn):
         self.file = sf.SoundFile(fqfn, "r")
@@ -18,8 +22,35 @@ class SfReader(FileReader):
         self.file.close()
 
 
-def merge(b1, b2, limiter):
-    return [[limiter.apply(b1[i][0] + b2[i][0]), limiter.apply(b1[i][1] + b2[i][1])] for i in range(len(b1))]
+class Mixer:
+    def __init__(self, sink_L, sink_R, limiter):
+        self.sink_L = sink_L
+        self.sink_R = sink_R
+        self.limiter = limiter
+
+    def _merge(self, b1, b2):
+        return [[self.limiter.apply(b1[i][0] + b2[i][0]), self.limiter.apply(b1[i][1] + b2[i][1])] for i in range(len(b1))]
+
+    def mix(self, audioFiles):
+        done = False
+        started = False
+        t = 0
+
+        while not done:
+            doneAll = True
+            b = [[0.0, 0.0]] * SAMPLE_RATE
+            for f in audioFiles:
+                if not f.done:
+                    doneAll = False
+                    if f.occursInBlockStarting(t):
+                        started = True
+                        b = self._merge(f.nextBlock(t), b)
+
+            outFileL.write([s[0] for s in b])
+            outFileR.write([s[1] for s in b])
+            t += 1
+            done = started and doneAll
+
 
 def parseLof(fqfn, substituteDir):
     files = []
@@ -62,27 +93,12 @@ else:
 
 print("writing %s_(L|R).wav" % outFnPrefix)
 
-SAMPLE_RATE = 44100
-done = False
-t = 0
 outFileL = sf.SoundFile("%s_L.wav" % outFnPrefix, "w", samplerate=SAMPLE_RATE, channels=1)
 outFileR = sf.SoundFile("%s_R.wav" % outFnPrefix, "w", samplerate=SAMPLE_RATE, channels=1)
-started = False
 limiter = Limiter(gain, threshold=0.8, assumedMax=1.6)
-while not done:
-    doneAll = True
-    b = [[0.0, 0.0]] * SAMPLE_RATE
-    for f in audioFiles:
-        if not f.done:
-            doneAll = False
-            if f.occursInBlockStarting(t):
-                started = True
-                b = merge(f.nextBlock(t), b, limiter)
 
-    outFileL.write([s[0] for s in b])
-    outFileR.write([s[1] for s in b])
-    t += 1
-    done = started and doneAll
+mixer = Mixer(outFileL, outFileR, limiter)
+mixer.mix(audioFiles)
 
 outFileL.close()
 outFileR.close()
