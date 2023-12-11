@@ -9,9 +9,17 @@ class Sink:
         self.vals.extend(v)
 
 
-class NoOpLimiter:
+class ConstCoeffLimiter:
+    def __init__(self, coeff):
+        self.coeff = coeff
+
     def apply(self, v):
-        return v
+        return v * self.coeff
+
+
+class NoOpLimiter(ConstCoeffLimiter):
+    def __init__(self):
+        ConstCoeffLimiter.__init__(self, 1.0)
 
 
 class ConstAudioFile:
@@ -42,3 +50,14 @@ def test_sums_constant_values():
 
     assert sinkL.vals == [0.0, 0.3, 0.5, 0.2, 0.0]
 
+
+def test_applies_limiter_to_sum_of_two_wave_values():
+    sinkL = Sink()
+    mixer = Mixer(sinkL, Sink(), ConstCoeffLimiter(0.5), 1)
+
+    file1 = ConstAudioFile(0.1, 2, 4, 1)
+    file2 = ConstAudioFile(0.1, 1, 3, 1)
+
+    mixer.mix([file1, file2])
+
+    assert sinkL.vals == [0.0, 0.05, 0.1, 0.05, 0.0]
